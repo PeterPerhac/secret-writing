@@ -8,18 +8,16 @@ import scala.io.Source
 
 object MyApp extends Codec {
 
-  val fileNameArgument = argument[String]("file")
-  val encodeFlag = flag("encode", "encode the text specified", "e").map(_ => Encode)
-  val decodeFlag = flag("decode", "decode the text specified", "d").map(_ => Decode)
-  val operation = encodeFlag orElse decodeFlag
+  private val fileNameArgument = argument[String]("file")
+  private val encodeFlag = flag("encode", "encode the text in file specified", "e").map(_ => encode)
+  private val decodeFlag = flag("decode", "decode the text in file specified", "d").map(_ => decode)
+  private val operation = encodeFlag orElse decodeFlag
 
-  sealed abstract class Operation(val fn: Codec)
+  val main: Opts[Unit] = (fileNameArgument, operation).mapN { (file, operation) =>
+    linesOf(file).foreach(operation andThen println)
+  }
 
-  case object Encode extends Operation(encode)
-
-  case object Decode extends Operation(decode)
-
-  def linesOf(filePath: String): List[String] = {
+  private def linesOf(filePath: String): List[String] = {
     val fileSource = Source.fromFile(filePath)
     try {
       fileSource.getLines().toList
@@ -28,23 +26,18 @@ object MyApp extends Codec {
     }
   }
 
-  def main: Opts[Unit] = (fileNameArgument, operation).mapN { (filePath, op) =>
-    linesOf(filePath).map(op.fn).foreach(println)
-  }
-
 }
 
 object SecretWriting extends CommandApp(
-  name = "Secret Writing",
+  name = "secret-writing",
   header =
-    """
-      |                        _
-      | ___  ___  ___ _ __ ___| |_
-      |/ __|/ _ \/ __| '__/ _ \ __|
-      |\__ \  __/ (__| | |  __/ |_
-      ||___/\___|\___|_|  \___|\__| Writing
-      |
-      |""".stripMargin,
+    """|                        _
+       | ___  ___  ___ _ __ ___| |_
+       |/ __|/ _ \/ __| '__/ _ \ __|
+       |\__ \  __/ (__| | |  __/ |_
+       ||___/\___|\___|_|  \___|\__| Writing
+       |
+       |""".stripMargin,
   main = MyApp.main,
   version = "0.1.0"
 )
